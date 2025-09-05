@@ -15,7 +15,7 @@ function App() {
       
       if (response.ok) {
         const data = await response.json();
-        setMessage(`Dashtech is successfully connected to the backend. ${data.message}`);
+        setMessage(`Dashtech is successfully connected to the backend. Message from backend: ${data.message}`);
         setIsConnected(true);
       } else {
         throw new Error("Failed to connect");
