@@ -1,0 +1,2 @@
+#Product Description
+The product is an application with a ui and ai agent system that acts as a vehicle mechanic, providing step-by-step diagnostics to diagnose the issue, and then suggesting fixes that the user can undertake. The main structure of the app is a simple but effective user interface communicating with a backend process running the agent. The app will need to run completely locally, with no internet access. It will use gpt-oss for the LLM. 

@@ -6,6 +6,8 @@ use tauri::{Manager, State};
 use std::net::TcpListener;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::io::{BufRead, BufReader};
+use std::thread;
 
 
 // Shared state for API base URL
@@ -70,19 +72,77 @@ fn spawn_backend_dev(app: &tauri::AppHandle, port: u16) {
         .stderr(Stdio::piped());
         
     match cmd.spawn() {
-        Ok(_child) => {
+        Ok(mut child) => {
             println!("Successfully spawned Python backend on port {}", port);
+            
+            // Capture stdout
+            if let Some(stdout) = child.stdout.take() {
+                let stdout_reader = BufReader::new(stdout);
+                thread::spawn(move || {
+                    for line in stdout_reader.lines() {
+                        match line {
+                            Ok(line) => println!("[Python Backend] {}", line),
+                            Err(e) => eprintln!("Error reading stdout: {}", e),
+                        }
+                    }
+                });
+            }
+            
+            // Capture stderr
+            if let Some(stderr) = child.stderr.take() {
+                let stderr_reader = BufReader::new(stderr);
+                thread::spawn(move || {
+                    for line in stderr_reader.lines() {
+                        match line {
+                            Ok(line) => eprintln!("[Python Backend ERROR] {}", line),
+                            Err(e) => eprintln!("Error reading stderr: {}", e),
+                        }
+                    }
+                });
+            }
         },
         Err(e) => {
             eprintln!("Failed to spawn Python backend with venv: {}", e);
             // Fallback to system python
             println!("Trying fallback with system Python...");
             let fallback_python = std::env::var("PYTHON").unwrap_or_else(|_| "python".to_string());
-            match Command::new(&fallback_python)
-                .current_dir(&backend_dir)
+            
+            let mut fallback_cmd = Command::new(&fallback_python);
+            fallback_cmd.current_dir(&backend_dir)
                 .args(["-m", "api", "--port", &port.to_string(), "--db", db.to_str().unwrap()])
-                .spawn() {
-                Ok(_) => println!("Successfully spawned Python backend with system Python on port {}", port),
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
+                
+            match fallback_cmd.spawn() {
+                Ok(mut child) => {
+                    println!("Successfully spawned Python backend with system Python on port {}", port);
+                    
+                    // Capture stdout for fallback
+                    if let Some(stdout) = child.stdout.take() {
+                        let stdout_reader = BufReader::new(stdout);
+                        thread::spawn(move || {
+                            for line in stdout_reader.lines() {
+                                match line {
+                                    Ok(line) => println!("[Python Backend] {}", line),
+                                    Err(e) => eprintln!("Error reading stdout: {}", e),
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Capture stderr for fallback
+                    if let Some(stderr) = child.stderr.take() {
+                        let stderr_reader = BufReader::new(stderr);
+                        thread::spawn(move || {
+                            for line in stderr_reader.lines() {
+                                match line {
+                                    Ok(line) => eprintln!("[Python Backend ERROR] {}", line),
+                                    Err(e) => eprintln!("Error reading stderr: {}", e),
+                                }
+                            }
+                        });
+                    }
+                },
                 Err(fallback_err) => {
                     eprintln!("Failed to spawn Python backend with system Python: {}", fallback_err);
                     eprintln!("Make sure Python is installed and the virtual environment is set up in: {:?}", backend_dir);
