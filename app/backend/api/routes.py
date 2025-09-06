@@ -3,6 +3,12 @@ from fastapi import APIRouter
 router = APIRouter()
 
 
+# Route for raising a new issue
+@router.post("/raise-issue")
+def raise_issue(issue: Issue):
+    return {"message": "Issue raised"}
+
+
 
 
 
