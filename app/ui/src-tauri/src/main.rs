@@ -9,12 +9,66 @@ use std::process::{Command, Stdio};
 use std::io::{BufRead, BufReader};
 use std::thread;
 
+mod voice;
+use voice::{record_and_transcribe, record_and_transcribe_with_duration};
+
 
 // Shared state for API base URL
 struct ApiBase(String);
 
 #[tauri::command]
 fn api_base(base: State<ApiBase>) -> String { base.0.clone() }
+
+#[tauri::command]
+async fn start_voice_input() -> Result<String, String> {
+    // Record and transcribe audio using Python script
+    match record_and_transcribe().await {
+        Ok(transcription) => {
+            println!("Voice transcription: {}", transcription);
+            Ok(transcription)
+        }
+        Err(e) => {
+            eprintln!("Voice recording error: {}", e);
+            Err(format!("Voice recording failed: {}. Please use text input.", e))
+        }
+    }
+}
+
+#[tauri::command]
+async fn start_voice_input_long() -> Result<String, String> {
+    // Record and transcribe audio for 10 seconds
+    match record_and_transcribe_with_duration(10).await {
+        Ok(transcription) => {
+            println!("Voice transcription: {}", transcription);
+            Ok(transcription)
+        }
+        Err(e) => {
+            eprintln!("Voice recording error: {}", e);
+            Err(format!("Voice recording failed: {}. Please use text input.", e))
+        }
+    }
+}
+
+#[tauri::command]
+async fn start_voice_input_very_long() -> Result<String, String> {
+    // Record and transcribe audio for 30 seconds
+    match record_and_transcribe_with_duration(30).await {
+        Ok(transcription) => {
+            println!("Voice transcription: {}", transcription);
+            Ok(transcription)
+        }
+        Err(e) => {
+            eprintln!("Voice recording error: {}", e);
+            Err(format!("Voice recording failed: {}. Please use text input.", e))
+        }
+    }
+}
+
+#[tauri::command]
+async fn stop_voice_input() -> Result<String, String> {
+    // Placeholder for stopping voice input
+    Ok("Voice input stopped".to_string())
+}
 
 
 
@@ -166,7 +220,13 @@ fn main() {
         app.manage(ApiBase(format!("http://127.0.0.1:{port}")));
         Ok(())
       })
-      .invoke_handler(tauri::generate_handler![api_base])
+      .invoke_handler(tauri::generate_handler![
+          api_base, 
+          start_voice_input, 
+          start_voice_input_long, 
+          start_voice_input_very_long, 
+          stop_voice_input
+      ])
       .run(tauri::generate_context!())
       .expect("error while running tauri app");
 }
