@@ -33,9 +33,17 @@ async def initialise_llm():
             keep_alive="30m",
             timeout=None
         )
-        await app.state.llm_client.warmup()
-        app.state.llm_ready = True
-        print("LLM initialization completed", flush=True)
+        # Try to warmup but don't block if Ollama is not available
+        try:
+            await asyncio.wait_for(app.state.llm_client.warmup(), timeout=5.0)
+            app.state.llm_ready = True
+            print("LLM initialization completed", flush=True)
+        except asyncio.TimeoutError:
+            print("LLM warmup timed out - Ollama may not be running", flush=True)
+            app.state.llm_ready = False
+        except Exception as warmup_error:
+            print(f"LLM warmup failed: {warmup_error}", flush=True)
+            app.state.llm_ready = False
     except Exception as e:
         print(f"LLM initialization failed: {e}", flush=True)
         app.state.llm_ready = False
