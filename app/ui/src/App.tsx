@@ -7,6 +7,61 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   
+  
+  const [websocket, setWebsocket] = useState<WebSocket | null>(null);
+  const [issueId, setIssueId] = useState<string | null>(null);
+
+  const createIssue = async () => {
+    try {
+      const api_base = await invoke("api_base") as string;
+      const ws_url = api_base.replace('http', 'ws') + '/issue/create';
+      
+      const ws = new WebSocket(ws_url);
+      
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        setWebsocket(ws);
+      };
+      
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'issue.created') {
+          setIssueId(data.issueId);
+          console.log('Issue created:', data.issueId);
+        } else if (data.type === 'issue.create_rejected') {
+          console.log('Issue creation rejected:', data.reason);
+        }
+      };
+      
+      ws.onclose = (event) => {
+        console.log('WebSocket closed:', { code: event.code, reason: event.reason || '(empty)', wasClean: event.wasClean });
+        setWebsocket(null);
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+      
+    } catch (error) {
+      console.error('Failed to create issue:', error);
+    }
+  };
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      createIssue();
+    }, 20000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  
+  
+  
+  
+  
+  
+  
   // Mock data for the UI
   const [systemStatus] = useState({
     systemNormal: true,

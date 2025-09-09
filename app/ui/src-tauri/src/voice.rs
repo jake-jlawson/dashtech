@@ -31,7 +31,7 @@ pub async fn record_and_transcribe_with_duration(duration_seconds: u32) -> Resul
     println!("Starting real voice recording for {} seconds...", duration_seconds);
     
     // Call the Python voice recorder script with configurable duration
-    let result = Command::new("/Users/raghviarya/.pyenv/versions/3.11.9/bin/python")
+    let result = Command::new("/Users/raghviarya/.pyenv/versions/3.11.9/bin/python") // THIS IS AN ISSUE
         .args(&["voice_recorder.py", "--duration", &duration_seconds.to_string(), "--model", "tiny"])
         .current_dir("/Users/raghviarya/dashtech/app/backend") // Navigate to backend directory
         .output();

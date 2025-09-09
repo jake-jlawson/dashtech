@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 import asyncio
 import httpx
-
+from fastapi import FastAPI
 from ollama import AsyncClient
 from ollama import chat
 
@@ -77,5 +77,30 @@ class LLMClient:
 
     
 
-
-
+"""
+initialise the llm client
+"""
+async def initialise_llm(app: FastAPI):
+    """Background task to initialise connection to LLM"""
+    try:
+        print("Starting LLM initialization...", flush=True)
+        app.state.llm_client = LLMClient(
+            base_url="http://localhost:11434",
+            model="gpt-oss:20b",
+            keep_alive="30m",
+            timeout=None
+        )
+        # Try to warmup but don't block if Ollama is not available
+        try:
+            await asyncio.wait_for(app.state.llm_client.warmup(), timeout=20)
+            app.state.llm_ready = True
+            print("LLM initialization completed", flush=True)
+        except asyncio.TimeoutError:
+            print("LLM warmup timed out - Ollama may not be running", flush=True)
+            app.state.llm_ready = False
+        except Exception as warmup_error:
+            print(f"LLM warmup failed: {warmup_error}", flush=True)
+            app.state.llm_ready = False
+    except Exception as e:
+        print(f"LLM initialization failed: {e}", flush=True)
+        app.state.llm_ready = False
