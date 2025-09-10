@@ -1,0 +1,31 @@
+
+
+
+.backendConnectionStatus {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    gap: 12px;
+    padding: 6px 20px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.statusDot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.statusText {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}

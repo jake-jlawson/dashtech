@@ -1,0 +1,221 @@
+
+
+
+.chat {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    backdrop-filter: blur(10px);
+    gap: 40px;
+    box-sizing: border-box;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    height: 100%;
+}
+
+.columnLeft { position: relative; }
+.columnRight { position: relative; }
+
+.sectionTitle {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+
+}
+
+/* Actions grid */
+/* .actionsSection { position: relative; } */
+
+.actionsGridContainer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.actionsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    width: 70%;
+}
+
+.actionsFeed {
+    flex: 1;
+    width: 100%;
+}
+
+.actionCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 12px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+.actionCard:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.actionIcon {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.actionLabel {
+    color: #fff;
+    font-size: 11px;
+    text-align: center;
+    line-height: 1.2;
+    font-weight: 500;
+}
+
+/* Input section */
+.inputContainer { 
+    position: relative; 
+    width: 100%;
+}
+
+.inputSection {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.inputRow {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.textInput {
+    flex: 1;
+    padding: 12px 16px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.iconButton {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: none;
+    background-color: rgba(0, 122, 255, 0.8);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s ease;
+}
+
+.iconButton:hover {
+    background-color: rgba(0, 122, 255, 1);
+    transform: scale(1.05);
+}
+
+.voiceButtons {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.smallButton {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    background-color: rgba(0, 122, 255, 0.8);
+    color: #fff;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.smallButton:hover {
+    background-color: rgba(0, 122, 255, 1);
+}
+
+.inputHint {
+    margin-top: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Results section */
+.resultsSection {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    gap: 16px;
+}
+
+.actionsSection {
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    gap: 16px;
+}
+
+.resultsText {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+.voiceDemoButton {
+    padding: 12px 20px;
+    background-color: rgba(0, 122, 255, 0.2);
+    border: 1px solid #007AFF;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.voiceDemoButton:hover {
+    background-color: rgba(0, 122, 255, 0.3);
+    transform: translateY(-1px);
+}
