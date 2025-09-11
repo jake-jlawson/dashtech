@@ -1,8 +1,26 @@
 import styles from "./Chat.module.css";
-
+import { useState } from "react";
+import { useIssue } from "../../hooks/useIssue";
 import ChatFeed from "./ChatFeed/ChatFeed";
 
+
 export default function Chat() {
+    
+    const { startDiagnostics, issueLog } = useIssue();
+    const [chatType, setChatType] = useState<"default" | "diagnostics" | "communications">("default");
+
+    
+
+    const handleStartDiagnostics = () => {
+        setChatType("diagnostics");
+        startDiagnostics();
+    }
+    
+    
+    
+    
+    
+    
     return (
         <div className={`${styles.chat}`}>
             {/* Left Column - Actions & Input */}
@@ -24,17 +42,24 @@ export default function Chat() {
                 
                 <div className={styles.actionsSection}>
                     <div className={`${styles.actionsFeed}`}>
-                        {/* <div className={`${styles.actionsGridContainer}`}>
-                            <div className={styles.actionsGrid}>
-                                {[{ icon: "⚙", label: "Run Diagnostics" }, { icon: "#", label: "Search Error Code" }, { icon: "💡", label: "Troubleshoot" }, { icon: "💬", label: "Ask Question" }].map((action, index) => (
-                                    <div className={styles.actionCard} key={index}>
-                                        <div className={styles.actionIcon}>{action.icon}</div>
-                                        <span className={styles.actionLabel}>{action.label}</span>
+                        
+                        {
+                            chatType === "diagnostics" ? (
+                                <ChatFeed issueLog={issueLog} />
+                            )
+                            : (
+                                <div className={`${styles.actionsGridContainer}`}>
+                                    <div className={styles.actionsGrid}>
+                                        {[{ icon: "⚙", label: "Run Diagnostics" }, { icon: "#", label: "Search Error Code" }, { icon: "💡", label: "Troubleshoot" }, { icon: "💬", label: "Ask Question" }].map((action, index) => (
+                                            <div className={styles.actionCard} key={index} onClick={handleStartDiagnostics}>
+                                                <div className={styles.actionIcon}>{action.icon}</div>
+                                                <span className={styles.actionLabel}>{action.label}</span>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                        </div> */}
-                        <ChatFeed />
+                                </div>
+                            )
+                        }
                     </div>
                     
                     <div className={styles.inputContainer}>

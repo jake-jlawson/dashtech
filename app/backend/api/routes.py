@@ -28,13 +28,39 @@ async def create_issue(websocket: WebSocket):
         await websocket.send_json({"type": "issue.create_rejected", "reason": "active_issue_exists"})
         await websocket.close(code=1008, reason="active_issue_exists")
         return
-    
-    # create a new issue
-    issue = await app_data.issue_manager.create_issue()
 
-    # set the connection for the issue
-    await app_data.issue_manager.set_connection(issue, websocket)
-    print(f"Issue created: {issue.id}", flush=True)
+    try:
+        # create a new issue with llm client
+        issue = await app_data.issue_manager.create_issue(app_data.llm_client)
+
+        # set the connection for the issue
+        await app_data.issue_manager.set_connection(issue, websocket)
+        print(f"Issue created: {issue.id}", flush=True)
+
+        # notify client and start loops
+        await issue.emit("issue.created", {"issue_id": issue.id, "created_at": issue.created_at})
+        issue.start()
+
+        # receive loop: forward inbound ws messages to IssueContext
+        while True:
+            incoming = await websocket.receive_json()
+            if not isinstance(incoming, dict):
+                continue
+            # ensure envelope fields for downstream
+            incoming.setdefault("issue_id", issue.id)
+            incoming.setdefault("v", 1)
+            incoming.setdefault("source", "ws")
+            issue.ingest(incoming)
+
+    except WebSocketDisconnect:
+        # client disconnected; clear connection
+        if issue is not None:
+            await app_data.issue_manager.clear_connection(issue)
+    except Exception as e:
+        try:
+            await websocket.send_json({"type": "issue.error", "payload": {"message": str(e)}})
+        finally:
+            await websocket.close(code=1011)
 
 
 

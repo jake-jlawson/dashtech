@@ -4,7 +4,7 @@ from core.agents.utilities import _jd
 import json
 from core.schemas import InboundMessage
 import asyncio
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Callable
 import datetime
 from core.agents.utilities import parse_llm_json
 
@@ -29,9 +29,17 @@ class CommunicationsAgent:
     You will be given instructions of either system -> user or user -> system and must respond appropriately.
     """
 
-    def __init__(self, llm_client: LLMClient, issue_id: str):
+    def __init__(self, llm_client: LLMClient, issue_id: str, emit: Callable[[str, Dict[str, Any]], None]):
         self.client = llm_client
         self.issue_id = issue_id
+        self.emit = emit
+
+    
+    async def talk(self, message: str) -> None:
+        """
+        Talk to the user.
+        """
+        await self.emit("communications.talk", {"message": message})
 
 
     async def communicate_test(self, test: Test) -> None:

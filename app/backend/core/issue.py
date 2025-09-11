@@ -49,7 +49,35 @@ class IssueContext:
         self.tests_log: List[Test] = [] # stores ordered list/history of tests run
 
         # Communications Attributes
-        self.communications_agent = CommunicationsAgent(llm_client, self.id)
+        self.communications_agent = CommunicationsAgent(llm_client, self.id, self.emit)
+
+    async def send(self, message: Dict[str, Any]) -> None:
+        """
+        Send a JSON message to the connected client, if any.
+        """
+        if self.connection is None:
+            return
+        async with self._send_lock:
+            try:
+                await self.connection.send_json(message)
+            except Exception:
+                # If send fails, drop the connection reference
+                self.connection = None
+
+    async def emit(self, type: str, payload: Dict[str, Any]) -> None:
+        """
+        Construct and send a simple event envelope to the client.
+        """
+        envelope: Dict[str, Any] = {
+            "type": type,
+            "v": 1,
+            "issue_id": self.id,
+            "payload": payload,
+            "meta": {
+                "timestamp": datetime.datetime.utcnow().isoformat(),
+            },
+        }
+        await self.send(envelope)
 
 
     async def _run_issue_loop(self) -> None:
@@ -87,7 +115,8 @@ class IssueContext:
 
                     # Prepare the next test
                     self.tests_log.append(next_test)  # add the next test to the tests_log
-                    _ = await self.communications_agent.communicate_test(next_test)  # send the next test to the user
+                    outbound_msg = await self.communications_agent.communicate_test(next_test)
+                    await self.send(outbound_msg)
 
                 elif self.run_status == "maintenance":
                     # Placeholder: implement maintenance behavior; yield meanwhile
@@ -159,6 +188,7 @@ class IssueContext:
         Register handlers for the event loop.
         """
         return {
+            "diagnostics.start": self._handle_diagnostics_start,
             "diagnostics.test_result": self._handle_diagnostics_test_result,
             "issue.begin": self._handle_issue_begin,
         }
@@ -169,6 +199,10 @@ class IssueContext:
     async def _handle_issue_begin(self, payload: Dict[str, Any]) -> None:
         self.run_status = "diagnostics"
         self.tests_log.append(payload)
+
+    async def _handle_diagnostics_start(self, payload: Dict[str, Any]) -> None:
+        await self.communications_agent.talk("Hello, could you please describe the problem you are experiencing?")
+        self.run_status = "diagnostics"
 
 
 
@@ -207,6 +241,7 @@ class IssueContext:
         Accepts InboundMessage or plain dicts (legacy); normalizes to InboundMessage.
         """
         ev = InboundMessage.ensure_envelope(msg)
+        print(f"Ingesting message: {ev}", flush=True)
         # If your queue expects dicts, push dicts; otherwise store the model.
         self._q.put_nowait(ev.model_dump())  # or put_nowait(ev) if you want models downstream
 
@@ -224,14 +259,14 @@ class IssueManager:
         """
         return self.current
 
-    async def create_issue(self) -> IssueContext:
+    async def create_issue(self, llm_client: LLMClient) -> IssueContext:
         """
         Create a new issue context if there is not one already, or return the existing one.
         Returns the issue context and a boolean indicating if a new one was created.
         """
         async with self._lock:
             if self.current is None:
-                self.current = IssueContext()
+                self.current = IssueContext(llm_client)
                 print("Issue created", flush=True)
                 return self.current
             else:
@@ -243,7 +278,7 @@ class IssueManager:
         Set the connection for the issue.
         """
         old = issue.connection
-        if old is not None and old is not ws:
+        if old is not None and old is not connection:
             try:
                 await old.close(code=1000)
             except Exception:
