@@ -1,0 +1,28 @@
+# Core FastAPI dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+websockets==12.0
+
+# HTTP client
+httpx==0.25.2
+
+# LLM integration
+ollama==0.1.7
+
+# Voice processing
+sounddevice==0.4.6
+openai-whisper==20231117
+numpy==1.24.3
+
+# RAG and embeddings
+sentence-transformers==2.2.2
+chromadb==0.4.15
+nomic==2.0.0
+
+# Data processing
+pandas==2.0.3
+Pillow==10.0.1
+
+# Utilities
+python-multipart==0.0.6
+pydantic==2.5.0

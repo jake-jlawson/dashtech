@@ -32,11 +32,37 @@
     padding: 10px 12px;
     border-radius: 12px 12px 12px 6px;
     backdrop-filter: blur(10px);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
 }
 .messageText {
     color: #fff;
     font-size: 13px;
     line-height: 1.45;
+    flex: 1;
+}
+
+.speakButton {
+    background: rgba(0, 122, 255, 0.2);
+    border: 1px solid rgba(0, 122, 255, 0.4);
+    color: #fff;
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 0 0 auto;
+}
+
+.speakButton:hover:not(:disabled) {
+    background: rgba(0, 122, 255, 0.3);
+    border-color: rgba(0, 122, 255, 0.6);
+}
+
+.speakButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 /* Issue created flag */

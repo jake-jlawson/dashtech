@@ -1,6 +1,7 @@
 import styles from "./Chat.module.css";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useIssue } from "../../hooks/useIssue";
+import { invoke } from "@tauri-apps/api/core";
 import ChatFeed from "./ChatFeed/ChatFeed";
 
 
@@ -8,12 +9,55 @@ export default function Chat() {
     
     const { startDiagnostics, issueLog } = useIssue();
     const [chatType, setChatType] = useState<"default" | "diagnostics" | "communications">("default");
-
-    
+    const [isListening, setIsListening] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [userInput, setUserInput] = useState("");
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const handleStartDiagnostics = () => {
         setChatType("diagnostics");
         startDiagnostics();
+    }
+
+    const handleVoiceInput = async () => {
+        if (isListening) return;
+        
+        setIsListening(true);
+        try {
+            // Use the longer recording duration for better results
+            const transcription = await invoke("start_voice_input_long") as string;
+            setUserInput(transcription);
+            if (inputRef.current) {
+                inputRef.current.value = transcription;
+            }
+        } catch (error) {
+            console.error("Voice input failed:", error);
+            alert(`Voice input failed: ${error}`);
+        } finally {
+            setIsListening(false);
+        }
+    }
+
+    const handleSpeak = (text: string) => {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.onstart = () => setIsSpeaking(true);
+            utterance.onend = () => setIsSpeaking(false);
+            utterance.onerror = () => setIsSpeaking(false);
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    const handleSubmit = () => {
+        if (userInput.trim()) {
+            // TODO: Send user input to diagnostics
+            console.log("User input:", userInput);
+            setUserInput("");
+            if (inputRef.current) {
+                inputRef.current.value = "";
+            }
+        }
     }
     
     
@@ -31,7 +75,13 @@ export default function Chat() {
                             Diagnostic results will appear here<br />
                             once you submit a query
                         </div>
-                    <button className={styles.voiceDemoButton}>🔊 Test Voice Output</button>
+                    <button 
+                        className={styles.voiceDemoButton}
+                        onClick={() => handleSpeak("Hello! This is Dashtech voice assistant. I'm ready to help with your vehicle diagnostics.")}
+                        disabled={isSpeaking}
+                    >
+                        {isSpeaking ? '🔊 Speaking...' : '🔊 Test Voice Output'}
+                    </button>
                 </div>
             </div>
 
@@ -66,11 +116,29 @@ export default function Chat() {
                         <div className={styles.inputSection}>
                             <div className={styles.inputRow}>
                                 <input
+                                    ref={inputRef}
                                     type="text"
                                     placeholder="Enter diagnostic question..."
                                     className={styles.textInput}
+                                    value={userInput}
+                                    onChange={(e) => setUserInput(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
                                 />
-                                <button className={styles.iconButton} title="Start voice input">🎤</button>
+                                <button 
+                                    className={styles.iconButton} 
+                                    title={isListening ? 'Recording...' : 'Start voice input'}
+                                    onClick={handleVoiceInput}
+                                    disabled={isListening}
+                                >
+                                    {isListening ? '🎤...' : '🎤'}
+                                </button>
+                                <button 
+                                    className={styles.iconButton} 
+                                    title="Submit question"
+                                    onClick={handleSubmit}
+                                >
+                                    ➤
+                                </button>
                             </div>
                             
                         </div>
