@@ -40,14 +40,6 @@ fn find_python_executable() -> String {
 }
 
 fn find_backend_directory() -> String {
-    // Hardcoded path for now to ensure it works
-    let backend_path = PathBuf::from("/Users/raghviarya/dashtech/app/backend");
-    
-    if backend_path.exists() && backend_path.join("voice_recorder.py").exists() {
-        println!("Found backend directory: {:?}", backend_path);
-        return backend_path.to_string_lossy().to_string();
-    }
-    
     // Try to find the backend directory relative to the current executable
     if let Ok(current_dir) = env::current_dir() {
         // Look for backend directory in common locations
@@ -84,7 +76,25 @@ fn find_backend_directory() -> String {
         }
     }
     
-    // Final fallback
+    // Try to find from the executable's directory
+    if let Ok(exe_dir) = std::env::current_exe() {
+        if let Some(exe_parent) = exe_dir.parent() {
+            let possible_paths = [
+                exe_parent.join("app").join("backend"),
+                exe_parent.parent().map(|p| p.join("app").join("backend")),
+                exe_parent.parent().and_then(|p| p.parent()).map(|p| p.join("app").join("backend")),
+            ];
+            
+            for path in possible_paths.iter().flatten() {
+                if path.exists() && path.join("voice_recorder.py").exists() {
+                    println!("Found backend directory from exe: {:?}", path);
+                    return path.to_string_lossy().to_string();
+                }
+            }
+        }
+    }
+    
+    // Final fallback - use current directory
     println!("Using fallback directory");
     env::current_dir()
         .unwrap_or_else(|_| PathBuf::from("."))
