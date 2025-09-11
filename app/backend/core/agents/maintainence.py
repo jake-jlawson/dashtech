@@ -35,7 +35,6 @@ class MaintainenceAgent:
         # Reusable RAG retriever (store assumed at app/backend/rag/store)
         self.retriever = RagRetriever(base_url=getattr(llm_client, "base_url", "http://localhost:11434"))
 
-+
     def query_rag(self, problem_description: List[Test], diagnosis: DiagnosisProbability, diagnosis_history: List[Test], k: int = 10) -> List[Dict[str, Any]]:
         issue = diagnosis.get("diagnosis") or ""
         q = (
