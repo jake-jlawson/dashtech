@@ -24,10 +24,7 @@ class CommunicationsAgent:
     - Interpreting the user's responses to the tests and updating the issue context accordingly.
     """
 
-    BASE_SYSTEM_PROMPT = """Reasoning level: Medium
-    You are an expert communicator whose job is to be the interface between a human user and the system.
-    You will be given instructions of either system -> user or user -> system and must respond appropriately.
-    """
+    BASE_SYSTEM_PROMPT = """You are a vehicle diagnostics communicator. Convert technical tests into clear user instructions."""
 
     def __init__(self, llm_client: LLMClient, issue_id: str, emit: Callable[[str, Dict[str, Any]], None]):
         self.client = llm_client
@@ -46,30 +43,19 @@ class CommunicationsAgent:
         """
         Communicate the test to the user.
         """
-        COMMUNICATION_SYSTEM_PROMPT = """ System -> User
-        You will be given some data that represents a test that the user needs to run on their vehicle to diagnose a problem.
-        This test could be a comprehensive test with multiple steps or just a single question the user has to answer.
-        You must consider how to best communicate this test to the user in a way that is easy to understand and follow.
-        You also have some level of control as to how it will be displayed to the user in the UI.
-        You must only output JSON matching exactly:
-        {
-        "test_text": "the_initial_message_to_the_user_for_the_test",
-        "test_instructions": [{"step_number": "the_step_number", "step_text": "the_text_of_the_step"}], 
-        "test_result_field_label": "the_label_of_the_field_in_the_ui_that_the_user_will_input_the_result_into",
-        "test_result_field_type": "the_type_of_the_field_in_the_ui_that_the_user_will_input_the_result_into",
-        "test_result_field_options": ["option_1", "option_2", "option_3", etc.], 
-        "safety_and_warnings": ["any safety considerations or warnings the user needs to be aware of"],
-        }
-        You do not have to include all fields.
-        Some can be left blank if you think they are not necessary to communicate the test.
-        For each thing you include, imagine it may be displayed in the UI so write accordingly.
-        Test Text: The initial message displayed to the user for the test.
-        Test Instructions: The instructions for the user to follow to complete the test. This can be a single step or multiple steps. If the test is just a single question, this will be an empty array.
-        Test Result Field Label: The label of the field in the UI that the user will input the result into. If the test is just a single question, this will be the question itself. If they need to record a specific value it should be the name of that value (ie. 'Tire Pressure').
-        Test Result Field Type: The type of the field in the UI that the user will input the result into. This can be 'text', 'number', 'boolean', or 'array' if it's an array of options.
-        Test Result Field Options: The options for the field in the UI that the user will input the result into. This is only used if the field type is 'array'.
+        COMMUNICATION_SYSTEM_PROMPT = """Convert vehicle diagnostic tests into clear user instructions.
 
-        """
+Output JSON:
+{
+  "test_text": "initial message to user",
+  "test_instructions": [{"step_number": "1", "step_text": "instruction"}],
+  "test_result_field_label": "field label",
+  "test_result_field_type": "text|number|boolean|array",
+  "test_result_field_options": ["option1", "option2"],
+  "safety_and_warnings": ["warning1", "warning2"]
+}
+
+Fields are optional. Write for UI display."""
         
         user_prompt = (
             "Test: {test}\n"
@@ -85,12 +71,10 @@ class CommunicationsAgent:
         _final_answer_chunks: List[str] = []
         async for chunk in self.client.chat(
             messages=llm_messages,
-            think=True,
+            think=False,  # Disable verbose reasoning
         ):
-            if chunk["thinking"]:
-                print(chunk["thinking"], end="", flush=True)   # reasoning stream only
             if chunk["content"]:
-                _final_answer_chunks.append(chunk["content"])     # buffer final answer
+                _final_answer_chunks.append(chunk["content"])
         
         full_test_payload = {
             "test_id": test["id"],

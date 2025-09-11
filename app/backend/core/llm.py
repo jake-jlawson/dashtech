@@ -14,8 +14,8 @@ _model: str = "gpt-oss:20b"
 _default_keep_alive: Optional[str | int] = "30m"   # keep model resident after calls
 
 _default_chat_params: Dict[str, Any] = {
-    "temperature": 0.7,
-    "max_tokens": 4096,
+    "temperature": 0.3,  # Lower temperature for more focused, concise responses
+    "max_tokens": 2048,  # Reduced token limit for shorter responses
 }
 
 
