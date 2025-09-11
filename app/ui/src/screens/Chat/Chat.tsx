@@ -51,8 +51,8 @@ export default function Chat() {
 
     const handleSubmit = () => {
         if (userInput.trim()) {
-            // TODO: Send user input to diagnostics
-            console.log("User input:", userInput);
+            if (chatType !== "diagnostics") setChatType("diagnostics");
+            sendIssueBegin(userInput);
             setUserInput("");
             if (inputRef.current) {
                 inputRef.current.value = "";

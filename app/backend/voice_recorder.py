@@ -14,6 +14,31 @@ import whisper
 import time
 import wave
 
+def _pick_input_device() -> int | None:
+    """
+    Return a sane input device index.
+    - Use current default if it has input channels.
+    - Else pick the first device with input channels > 0.
+    """
+    try:
+        default = sd.default.device
+        if isinstance(default, (list, tuple)) and default and default[0] is not None:
+            info = sd.query_devices(default[0])
+            if info.get("max_input_channels", 0) > 0:
+                return default[0]
+    except Exception:
+        pass
+
+    try:
+        devices = sd.query_devices()
+        for idx, dev in enumerate(devices):
+            if dev.get("max_input_channels", 0) > 0:
+                return idx
+    except Exception:
+        pass
+    return None
+
+
 def record_audio(duration=5, sample_rate=16000):
     """
     Record audio from the default microphone for the specified duration.
@@ -28,6 +53,15 @@ def record_audio(duration=5, sample_rate=16000):
     print(f"Recording for {duration} seconds...", file=sys.stderr)
     
     try:
+        # Choose a valid input device if default is not usable
+        device_index = _pick_input_device()
+        if device_index is not None:
+            sd.default.device = (device_index, None)
+            dev_info = sd.query_devices(device_index)
+            print(f"Using input device: #{device_index} - {dev_info.get('name')} (inputs={dev_info.get('max_input_channels')})", file=sys.stderr)
+        else:
+            print("No valid input device found; recording may fail or be silent.", file=sys.stderr)
+
         # Record audio
         audio_data = sd.rec(
             int(duration * sample_rate), 
@@ -37,7 +71,12 @@ def record_audio(duration=5, sample_rate=16000):
         )
         sd.wait()  # Wait until recording is finished
         
-        print("Recording completed.", file=sys.stderr)
+        # Compute simple RMS to detect silence
+        try:
+            rms = float(np.sqrt(np.mean(np.square(audio_data))))
+        except Exception:
+            rms = 0.0
+        print(f"Recording completed. RMS={rms:.6f}", file=sys.stderr)
         return audio_data.flatten()
         
     except Exception as e:

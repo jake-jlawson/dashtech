@@ -3,7 +3,7 @@ import re
 import uuid
 from typing import Any, Dict, List, Protocol, TypedDict, Optional, Tuple, Awaitable, Callable
 from core.llm import LLMClient
-from core.agents.utilities import _jd, parse_llm_json
+from core.agents.utilities import _jd, parse_llm_json, normalise_probabilities
 
 
 
@@ -45,19 +45,37 @@ class DiagnosticsAgent:
 LLM Diagnostics Agent
 """
 class LLMDiagnosticsAgent(DiagnosticsAgent):
-    SYSTEM_PROMPT = (
-        "You are a vehicle diagnostics agent. Analyze test results and update diagnosis probabilities.\n\n"
-        "Output ONLY this JSON:\n"
-        "{\n"
-        '  "updated_probabilities": [{"issue": "description", "probability": number}],\n'
-        '  "next_test": {"name": "test_name", "description": "what to do", "rationale": "why important", "outcomes": {"type": "string|number|boolean|array|object", "outcome_data": "options"}}\n'
-        "}\n\n"
-        "Rules:\n"
-        "- Update probabilities: strong support ×2.0, some support ×1.2, neutral ×1.0, some contradiction ×0.8, strong contradiction ×0.5\n"
-        "- Don't normalize probabilities\n"
-        "- Choose next test that reveals most info with least effort\n"
-        "- Output only JSON, no extra text\n"
-    )
+    SYSTEM_PROMPT = """
+You are a vehicle diagnostics agent. Analyze test results and update diagnosis probabilities.
+Then provide the next test and details of this test. 
+
+Output ONLY this JSON:
+{
+  "updated_probabilities": [
+    { "diagnosis": "description", "probability": 0.5 }
+  ],
+  "next_test": {
+    "test_text": "initial message to user",
+    "test_instructions": [ { "step_number": "1", "step_text": "instruction" } ],
+    "test_result_field_label": "field label",
+    "test_result_field_type": "text|number|boolean|array",
+    "test_result_field_options": [ "option1", "option2" ],
+    "safety_and_warnings": [ "warning1", "warning2" ]
+  }
+}
+
+Rules for probabilities:
+- If there are no current diagnoses, you need to come up with some. 
+- Update probabilities: strong support ×2.0, some support ×1.2, neutral ×1.0, some contradiction ×0.8, strong contradiction ×0.5
+- Don't normalize probabilities.
+- If there is a potential diagnosis that is missing from the list, add it.
+Rules for the next test:
+- A test should be a single test that can be under
+- Choose next test that reveals most info with least effort.
+- Outcome Data should store the options if the outcome is an array
+General rules:
+- Output only JSON, no extra text
+"""
 
     def __init__(self, llm_client: LLMClient):
         self.client = llm_client
@@ -116,6 +134,9 @@ class LLMDiagnosticsAgent(DiagnosticsAgent):
         # Ensure the test has a unique identifier for UI round-trips
         if "id" not in next_test or not next_test["id"]:
             next_test["id"] = str(uuid.uuid4())
+
+        # normalise probabilities
+        diagnosis_probabilities_updated = normalise_probabilities(diagnosis_probabilities_updated)
 
         return diagnosis_probabilities_updated, next_test
 

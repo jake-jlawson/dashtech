@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 # ----- UTILITIES -----
 def _jd(x) -> str:
@@ -95,3 +95,25 @@ def parse_llm_json(output_text: str) -> Dict[str, Any]:
 
 def lookup_error_code(error_code: str) -> str:
     pass
+
+
+def normalise_probabilities(probabilities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if not probabilities:
+        return probabilities
+    
+    # Calculate the sum of all probabilities
+    total = sum(prob.get("probability", 0) for prob in probabilities)
+    
+    # If total is 0 or very close to 0, return equal probabilities
+    if total <= 1e-10:
+        equal_prob = 1.0 / len(probabilities)
+        return [
+            {**prob, "probability": equal_prob}
+            for prob in probabilities
+        ]
+    
+    # Normalize each probability by dividing by the total
+    return [
+        {**prob, "probability": prob.get("probability", 0) / total}
+        for prob in probabilities
+    ]

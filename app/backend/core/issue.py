@@ -101,11 +101,18 @@ class IssueContext:
                     # Run the diagnostics agent to update probabilities and obtain next test
                     # notify UI that diagnostics step is in progress
                     await self.emit("diagnostics.loading", {"status": "started"})
-                    self.diagnosis_probabilities, next_test = await self.diagnostics_agent.run(
-                        self.diagnosis_probabilities,
-                        self.tests_log,
-                        on_thinking=lambda text: self.emit("llm.thinking", {"text": text}),
-                    )
+                    try:
+                        self.diagnosis_probabilities, next_test = await self.diagnostics_agent.run(
+                            self.diagnosis_probabilities,
+                            self.tests_log,
+                            on_thinking=lambda text: self.emit("llm.thinking", {"text": text}),
+                        )
+                    except Exception as e:
+                        await self.emit("diagnostics.loading", {"status": "completed"})
+                        await self.emit("diagnostics.error", {"message": str(e)})
+                        # Yield to avoid tight loop on repeated errors
+                        await asyncio.sleep(0.1)
+                        continue
                     await self.emit("diagnostics.loading", {"status": "completed"})
                     print(f"Probabilities Updated: {self.diagnosis_probabilities}", flush=True)
                     print(f"Next Test: {next_test}", flush=True)
@@ -117,10 +124,9 @@ class IssueContext:
                             self.run_status = "maintenance"
                             break
 
-                    # Prepare the next test
+                    # Prepare the next test and notify UI
                     self.tests_log.append(next_test)  # add the next test to the tests_log
-                    outbound_msg = await self.communications_agent.communicate_test(next_test)
-                    await self.send(outbound_msg)
+                    await self.communications_agent.communicate_test(next_test)
 
                 elif self.run_status == "maintenance":
                     # Placeholder: implement maintenance behavior; yield meanwhile

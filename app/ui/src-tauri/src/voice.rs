@@ -25,76 +25,69 @@ impl VoiceRecorder {
 
 }
 
-fn find_python_executable() -> String {
-    // Try common Python executable names
-    let python_commands = ["python3", "python", "py"];
-    
-    for cmd in &python_commands {
-        if Command::new(cmd).arg("--version").output().is_ok() {
-            return cmd.to_string();
+fn find_python_executable(backend_dir: &str) -> String {
+    // Prefer the project's virtual environment if present
+    let venv_candidates = [
+        PathBuf::from(backend_dir).join("venv").join("Scripts").join("python.exe"), // Windows
+        PathBuf::from(backend_dir).join(".venv").join("Scripts").join("python.exe"), // Windows alt
+        PathBuf::from(backend_dir).join("venv").join("bin").join("python3"),        // Unix
+        PathBuf::from(backend_dir).join(".venv").join("bin").join("python3"),      // Unix alt
+        PathBuf::from(backend_dir).join("venv").join("bin").join("python"),        // Unix fallback
+        PathBuf::from(backend_dir).join(".venv").join("bin").join("python"),      // Unix fallback alt
+    ];
+
+    for venv_python in &venv_candidates {
+        if venv_python.exists() {
+            return venv_python.to_string_lossy().to_string();
         }
     }
-    
-    // Fallback to python3 if nothing else works
-    "python3".to_string()
+
+    // Try common Python executable names on PATH; require a successful status
+    let python_commands = ["py", "python3", "python"];
+    for cmd in &python_commands {
+        if let Ok(output) = Command::new(cmd).arg("--version").output() {
+            if output.status.success() {
+                return cmd.to_string();
+            }
+        }
+    }
+
+    // Final fallback
+    "python".to_string()
 }
 
 fn find_backend_directory() -> String {
-    // Try to find the backend directory relative to the current executable
+    // Collect candidate directories by walking up from current_dir and exe_dir
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
     if let Ok(current_dir) = env::current_dir() {
-        // Look for backend directory in common locations
-        let possible_paths = [
-            Some(current_dir.join("app").join("backend")),
-            Some(current_dir.join("backend")),
-            current_dir.parent().map(|p| p.join("app").join("backend")),
-            current_dir.parent().map(|p| p.join("backend")),
-        ];
-        
-        for path in possible_paths.iter().flatten() {
-            if path.exists() && path.join("voice_recorder.py").exists() {
-                println!("Found backend directory: {:?}", path);
-                return path.to_string_lossy().to_string();
-            }
+        for ancestor in current_dir.ancestors() {
+            candidates.push(ancestor.join("app").join("backend"));
+            candidates.push(ancestor.join("backend"));
         }
     }
-    
-    // Fallback: try to find from the project root
-    if let Ok(current_dir) = env::current_dir() {
-        // If we're in the ui directory, go up to find the backend
-        if current_dir.ends_with("ui") || current_dir.ends_with("src-tauri") {
-            let backend_path = current_dir
-                .parent()
-                .and_then(|p| p.parent())
-                .map(|p| p.join("app").join("backend"));
-            
-            if let Some(path) = backend_path {
-                if path.exists() && path.join("voice_recorder.py").exists() {
-                    println!("Found backend directory from ui: {:?}", path);
-                    return path.to_string_lossy().to_string();
-                }
-            }
-        }
-    }
-    
-    // Try to find from the executable's directory
+
     if let Ok(exe_dir) = std::env::current_exe() {
         if let Some(exe_parent) = exe_dir.parent() {
-            let possible_paths = [
-                exe_parent.join("app").join("backend"),
-                exe_parent.parent().map(|p| p.join("app").join("backend")),
-                exe_parent.parent().and_then(|p| p.parent()).map(|p| p.join("app").join("backend")),
-            ];
-            
-            for path in possible_paths.iter().flatten() {
-                if path.exists() && path.join("voice_recorder.py").exists() {
-                    println!("Found backend directory from exe: {:?}", path);
-                    return path.to_string_lossy().to_string();
-                }
+            for ancestor in exe_parent.ancestors() {
+                candidates.push(ancestor.join("app").join("backend"));
+                candidates.push(ancestor.join("backend"));
             }
         }
     }
-    
-    // Final fallback - use current directory
+
+    // Deduplicate simple duplicates while preserving order
+    let mut seen = std::collections::HashSet::new();
+    candidates.retain(|p| seen.insert(p.clone()));
+
+    for path in candidates {
+        if path.exists() && path.join("voice_recorder.py").exists() {
+            println!("Found backend directory: {:?}", path);
+            return path.to_string_lossy().to_string();
+        }
+    }
+
+    // Final fallback - use current directory so caller can still attempt
     println!("Using fallback directory");
     env::current_dir()
         .unwrap_or_else(|_| PathBuf::from("."))
@@ -109,13 +102,13 @@ pub async fn record_and_transcribe() -> Result<String> {
 pub async fn record_and_transcribe_with_duration(duration_seconds: u32) -> Result<String> {
     println!("Starting real voice recording for {} seconds...", duration_seconds);
     
-    // Find Python executable dynamically
-    let python_cmd = find_python_executable();
+    // Resolve backend directory, then choose Python interpreter
     let backend_dir = find_backend_directory();
+    let python_cmd = find_python_executable(&backend_dir);
     
     // Call the Python voice recorder script with configurable duration
     let result = Command::new(python_cmd)
-        .args(&["voice_recorder.py", "--duration", &duration_seconds.to_string(), "--model", "tiny"])
+        .args(&["voice_recorder.py", "--duration", &duration_seconds.to_string(), "--model", "base"])
         .current_dir(&backend_dir)
         .output();
     

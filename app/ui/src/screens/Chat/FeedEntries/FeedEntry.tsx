@@ -11,13 +11,14 @@ export default function FeedEntry({log, onSubmitTestResult}: {log: any, onSubmit
         "issue.created": <IssueCreatedEntry log={log} />,
         "diagnostics.test": <DiagnosticsTestEntry log={log} onSubmitTestResult={onSubmitTestResult} />,
     };
-    
+    const entry = feedEntries[log.type as keyof typeof feedEntries] ?? <RawEntry log={log} />;
     return (
         <div className={styles.feedEntryContainer}>
-            {feedEntries[log.type as keyof typeof feedEntries]}
+            {entry}
         </div>
     )
 }
+// ProbabilitiesEntry removed per product direction: do not display probabilities to the user.
 
 
 function TalkEntry({log}: {log: any}) {
@@ -91,7 +92,7 @@ function DiagnosticsTestEntry({log, onSubmitTestResult}: {log: any, onSubmitTest
     return (
         <div className={styles.messageRow}>
             <div className={styles.agentAvatar}>🧪</div>
-            <div className={styles.messageBubble}>
+            <div className={`${styles.messageBubble} ${styles.testCard}`}>
                 {testText && <div className={styles.messageText}>{testText}</div>}
                 {rationale && <div className={styles.messageSubtext}>Why: {rationale}</div>}
                 {Array.isArray(testInstructions) && testInstructions.length > 0 && (
@@ -127,6 +128,17 @@ function DiagnosticsTestEntry({log, onSubmitTestResult}: {log: any, onSubmitTest
                     )}
                     <button type="submit" className={styles.formButton}>Submit</button>
                 </form>
+            </div>
+        </div>
+    );
+}
+
+function RawEntry({log}: {log: any}) {
+    return (
+        <div className={styles.messageRow}>
+            <div className={styles.agentAvatar}>📝</div>
+            <div className={styles.messageBubble}>
+                <pre className={styles.messageText} style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(log, null, 2)}</pre>
             </div>
         </div>
     );

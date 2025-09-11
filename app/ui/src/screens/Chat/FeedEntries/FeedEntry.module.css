@@ -93,3 +93,48 @@
     font-size: 12px;
 }
 
+.testCard {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 10px 12px;
+    border-radius: 12px;
+}
+.messageSubtext {
+    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+}
+.messageList {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+}
+.formRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+.formLabel {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+}
+.formInput {
+    flex: 1;
+    min-width: 160px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    border-radius: 6px;
+    padding: 6px 8px;
+}
+.formButton {
+    background: rgba(0, 122, 255, 0.25);
+    border: 1px solid rgba(0, 122, 255, 0.45);
+    color: #fff;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
