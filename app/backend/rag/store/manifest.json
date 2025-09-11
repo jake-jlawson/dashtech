@@ -1,0 +1,6 @@
+{
+  "embed_model": "nomic-embed-text",
+  "count": 988,
+  "dim": 768,
+  "data_dir": "C:\\Users\\jakej\\Files\\Projects\\OpenAI gpt-oss hackathon\\dashtech\\data\\daf-lf45-lf55\\documentation"
+}
