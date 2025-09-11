@@ -1,7 +1,7 @@
 import typing, json
 import re
 import uuid
-from typing import Any, Dict, List, Protocol, TypedDict, Optional, Tuple
+from typing import Any, Dict, List, Protocol, TypedDict, Optional, Tuple, Awaitable, Callable
 from core.llm import LLMClient
 from core.agents.utilities import _jd, parse_llm_json
 
@@ -65,7 +65,8 @@ class LLMDiagnosticsAgent(DiagnosticsAgent):
     async def run(
         self, 
         diagnosis_probabilities: List[DiagnosisProbability | None], 
-        tests_log: List[Test]
+        tests_log: List[Test],
+        on_thinking: Optional[Callable[[str], Awaitable[None]]] = None,
     ) -> Tuple[List[DiagnosisProbability], Test]:
 
         user_prompt = (
@@ -95,6 +96,13 @@ class LLMDiagnosticsAgent(DiagnosticsAgent):
             messages=llm_messages,
             think=False,  # Disable verbose reasoning
         ):
+            if chunk["thinking"]:
+                if on_thinking is not None:
+                    try:
+                        await on_thinking(chunk["thinking"])  # stream to client
+                    except Exception:
+                        pass
+                print(chunk["thinking"], end="", flush=True)   # reasoning stream only
             if chunk["content"]:
                 _final_answer_chunks.append(chunk["content"])
 
@@ -105,6 +113,9 @@ class LLMDiagnosticsAgent(DiagnosticsAgent):
         diagnosis_probabilities_updated = result["updated_probabilities"]
         next_test = result["next_test"]
         next_test["result"] = None #ensure the result is None until the user runs the test
+        # Ensure the test has a unique identifier for UI round-trips
+        if "id" not in next_test or not next_test["id"]:
+            next_test["id"] = str(uuid.uuid4())
 
         return diagnosis_probabilities_updated, next_test
 

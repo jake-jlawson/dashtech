@@ -7,7 +7,7 @@ import ChatFeed from "./ChatFeed/ChatFeed";
 
 export default function Chat() {
     
-    const { startDiagnostics, issueLog } = useIssue();
+    const { startDiagnostics, issueLog, sendIssueBegin, submitTestResult, loading, thinking } = useIssue();
     const [chatType, setChatType] = useState<"default" | "diagnostics" | "communications">("default");
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -95,7 +95,7 @@ export default function Chat() {
                         
                         {
                             chatType === "diagnostics" ? (
-                                <ChatFeed issueLog={issueLog} />
+                                <ChatFeed issueLog={issueLog} onSubmitTestResult={submitTestResult} loading={loading} thinking={thinking} />
                             )
                             : (
                                 <div className={`${styles.actionsGridContainer}`}>
@@ -118,7 +118,7 @@ export default function Chat() {
                                 <input
                                     ref={inputRef}
                                     type="text"
-                                    placeholder="Enter diagnostic question..."
+                                    placeholder="Describe your problem and press Enter..."
                                     className={styles.textInput}
                                     value={userInput}
                                     onChange={(e) => setUserInput(e.target.value)}

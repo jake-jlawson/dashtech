@@ -99,10 +99,14 @@ class IssueContext:
                         continue
 
                     # Run the diagnostics agent to update probabilities and obtain next test
+                    # notify UI that diagnostics step is in progress
+                    await self.emit("diagnostics.loading", {"status": "started"})
                     self.diagnosis_probabilities, next_test = await self.diagnostics_agent.run(
                         self.diagnosis_probabilities,
                         self.tests_log,
+                        on_thinking=lambda text: self.emit("llm.thinking", {"text": text}),
                     )
+                    await self.emit("diagnostics.loading", {"status": "completed"})
                     print(f"Probabilities Updated: {self.diagnosis_probabilities}", flush=True)
                     print(f"Next Test: {next_test}", flush=True)
 

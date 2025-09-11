@@ -4,7 +4,7 @@ from core.agents.utilities import _jd
 import json
 from core.schemas import InboundMessage
 import asyncio
-from typing import Any, Dict, List, Callable
+from typing import Any, Dict, List, Callable, Optional, Awaitable
 import datetime
 from core.agents.utilities import parse_llm_json
 
@@ -73,6 +73,13 @@ Fields are optional. Write for UI display."""
             messages=llm_messages,
             think=False,  # Disable verbose reasoning
         ):
+            if chunk["thinking"]:
+                # stream thinking to UI
+                try:
+                    await self.emit("llm.thinking", {"text": chunk["thinking"]})
+                except Exception:
+                    pass
+                print(chunk["thinking"], end="", flush=True)   # reasoning stream only
             if chunk["content"]:
                 _final_answer_chunks.append(chunk["content"])
         
@@ -82,6 +89,7 @@ Fields are optional. Write for UI display."""
         } | parse_llm_json("".join(_final_answer_chunks))
 
         return self.construct_outbound_message("diagnostics.test", full_test_payload, self.issue_id)
+
 
 
     def construct_outbound_message(self, type: str, payload: Dict[str, Any], issue_id: str) -> InboundMessage:
